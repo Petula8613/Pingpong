@@ -636,7 +636,9 @@ async function init() {
 init();
 setInterval(async () => {
   await loadAll();
-  nacistHraceModal(); // refresh player selects too
+  if (!document.getElementById('modalZapas').classList.contains('open')) {
+    nacistHraceModal();
+  }
 }, 30000);
     </script>
 </body>
