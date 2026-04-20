@@ -178,6 +178,7 @@
     <script src="app.js"></script>
     <script>
         let config = {};
+        let hraciData = { dospeli: [], dorost: [] };
 
         async function init() {
             config = await API.get("/config");
@@ -209,11 +210,11 @@
         }
 
         async function nacistHrace() {
-            const hraci = await API.get("/hraci");
-            renderList("dospeli", hraci.dospeli);
-            renderList("dorost", hraci.dorost);
-            document.getElementById("count-dospeli").textContent = hraci.dospeli.length;
-            document.getElementById("count-dorost").textContent = hraci.dorost.length;
+            hraciData = await API.get("/hraci");
+            renderList("dospeli", hraciData.dospeli);
+            renderList("dorost", hraciData.dorost);
+            document.getElementById("count-dospeli").textContent = hraciData.dospeli.length;
+            document.getElementById("count-dorost").textContent = hraciData.dorost.length;
         }
 
         function renderList(skupina, hraci) {
@@ -237,6 +238,15 @@
 
             if (!jmeno || !prijmeni) {
                 showToast("Vyplň prosím jméno i příjmení.", "error");
+                return;
+            }
+
+            const duplicate = hraciData[skupina].find(h =>
+                h.jmeno.toLowerCase() === jmeno.toLowerCase() &&
+                h.prijmeni.toLowerCase() === prijmeni.toLowerCase()
+            );
+            if (duplicate) {
+                showToast(`⚠️ ${jmeno} ${prijmeni} je již registrován/a ve skupině ${skupinaLabel(skupina)}!`, "warn");
                 return;
             }
 

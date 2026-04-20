@@ -352,6 +352,8 @@
                     </div>
                 </div>
 
+                <div id="zapas-warning" style="display:none;margin-bottom:4px"></div>
+
                 <div class="form-group">
                     <label class="form-label">Skóre setů</label>
                     <div class="player-names">
@@ -578,6 +580,38 @@ function updatePlayerLabels() {
   const s2 = document.getElementById("z-hrac2");
   document.getElementById("plabel1").textContent = s1.options[s1.selectedIndex]?.text || "Hráč 1";
   document.getElementById("plabel2").textContent = s2.options[s2.selectedIndex]?.text || "Hráč 2";
+
+  const h1id = s1.value;
+  const h2id = s2.value;
+  const warn = document.getElementById("zapas-warning");
+
+  if (h1id && h2id && h1id !== h2id) {
+    const skupina = document.querySelector('input[name="z-skupina"]:checked').value;
+    const predchozi = allZapasy.filter(z =>
+      z.skupina === skupina &&
+      ((z.hrac1_id === h1id && z.hrac2_id === h2id) ||
+       (z.hrac1_id === h2id && z.hrac2_id === h1id))
+    );
+    if (predchozi.length) {
+      const vysledky = predchozi.map(z => {
+        const jsemH1 = z.hrac1_id === h1id;
+        const moje = jsemH1 ? z.h1_sety_won : z.h2_sety_won;
+        const jejich = jsemH1 ? z.h2_sety_won : z.h1_sety_won;
+        const sety = z.sety.map(s => jsemH1 ? `${s.h1}:${s.h2}` : `${s.h2}:${s.h1}`).join(", ");
+        return `<strong>${moje}:${jejich}</strong> na sety (${sety})`;
+      }).join(" &nbsp;|&nbsp; ");
+      const pocet = predchozi.length;
+      warn.style.display = "";
+      warn.innerHTML = `<div style="background:rgba(255,165,2,.12);border:1px solid rgba(255,165,2,.35);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--warn)">
+        ⚠️ Tito hráči již odehráli ${pocet} zápas${pocet > 1 ? "y" : ""}:&nbsp; ${vysledky}<br>
+        <span style="color:var(--muted);font-size:11px">Uložením přidáš další zápas.</span>
+      </div>`;
+    } else {
+      warn.style.display = "none";
+    }
+  } else {
+    warn.style.display = "none";
+  }
 }
 
 function renderSetRows() {
