@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin – Pingpong Turnaj</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:12px; flex-wrap:wrap; }
+    .section-title { font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:900; text-transform:uppercase; letter-spacing:.5px; }
+    .section-title span { color:var(--accent); }
+    .btn-icon { background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:4px; font-size:15px; transition:background .15s; }
+    .btn-icon:hover { background:var(--bg3); }
+    .admin-section { margin-bottom:40px; }
+    .set-edit-row { display:grid; grid-template-columns:1fr 32px 1fr 32px; align-items:center; gap:8px; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:8px; }
+    .set-edit-label { grid-column:1/-1; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div id="login-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+  <div class="card" style="width:320px;padding:32px">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:40px">🔒</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;margin-top:8px">Admin</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Heslo</label>
+      <input type="password" id="login-pwd" class="form-control" placeholder="Zadej heslo…" autofocus>
+    </div>
+    <div id="login-error" style="display:none;color:var(--danger);font-size:13px;margin-bottom:10px">❌ Nesprávné heslo</div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="prihlasit()">Přihlásit</button>
+  </div>
+</div>
+
+<!-- Admin content -->
+<div id="admin-content" style="display:none">
+  <header class="site-header">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">🏓</div>
+      Ping<span>Pong</span> Turnaj
+    </a>
+    <div class="header-nav">
+      <span style="color:var(--accent);font-size:13px;font-weight:700">🔒 ADMIN</span>
+      <button class="btn btn-secondary btn-sm" onclick="odhlasit()">Odhlásit</button>
+    </div>
+  </header>
+
+  <div class="container" style="padding:24px 0 60px">
+
+    <!-- Hráči -->
+    <div class="admin-section">
+      <div class="section-head">
+        <div class="section-title">👤 Hráči</div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="setTab('dospeli',this)">🏆 Dospělí</button>
+          <button class="tab-btn" onclick="setTab('dorost',this)">⭐ Dorost</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Jméno</th><th>Příjmení</th><th></th></tr>
+            </thead>
+            <tbody id="tbl-hraci"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zápasy -->
+    <div class="admin-section">
+      <div class="section-head">
+        <div class="section-title">⚡ Zápasy</div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Sk.</th><th>Hráč 1</th><th>Hráč 2</th><th>Výsledek</th><th>Datum</th><th></th></tr>
+            </thead>
+            <tbody id="tbl-zapasy"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Upravit hráče -->
+<div class="modal-backdrop" id="modalHrac">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Upravit hráče</div>
+      <button class="modal-close" onclick="closeModal('modalHrac')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eh-id">
+      <div class="form-group">
+        <label class="form-label">Jméno</label>
+        <input type="text" id="eh-jmeno" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Příjmení</label>
+        <input type="text" id="eh-prijmeni" class="form-control">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalHrac')">Zrušit</button>
+      <button class="btn btn-primary" onclick="ulozitHrace()">💾 Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Upravit zápas -->
+<div class="modal-backdrop" id="modalZapas">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Upravit zápas</div>
+      <button class="modal-close" onclick="closeModal('modalZapas')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ez-id">
+      <div id="ez-info" style="margin-bottom:14px;font-size:14px;font-weight:600;color:var(--accent)"></div>
+      <div id="ez-sety"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:4px" onclick="pridatSetEdit()">+ Přidat set</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalZapas')">Zrušit</button>
+      <button class="btn btn-primary" onclick="ulozitZapas()">💾 Uložit</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  let adminPwd = sessionStorage.getItem("adminPwd") || "";
+  let hraciData = { dospeli: [], dorost: [] };
+  let zapasyData = [];
+  let currentTab = "dospeli";
+
+  function escQ(s) { return String(s).replace(/"/g, "&quot;"); }
+
+  const AApi = {
+    async get(path) {
+      return (await fetch("/api" + path)).json();
+    },
+    async put(path, data) {
+      const r = await fetch("/api" + path, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "X-Admin-Password": adminPwd },
+        body: JSON.stringify(data)
+      });
+      return r.json();
+    },
+    async del(path) {
+      const r = await fetch("/api" + path, {
+        method: "DELETE",
+        headers: { "X-Admin-Password": adminPwd }
+      });
+      return r.json();
+    }
+  };
+
+  async function prihlasit() {
+    const pwd = document.getElementById("login-pwd").value;
+    const r = await fetch("/api/admin/verify", { headers: { "X-Admin-Password": pwd } });
+    const res = await r.json();
+    if (res.ok) {
+      adminPwd = pwd;
+      sessionStorage.setItem("adminPwd", pwd);
+      document.getElementById("login-error").style.display = "none";
+      await zobrazit();
+    } else {
+      document.getElementById("login-error").style.display = "";
+    }
+  }
+
+  function odhlasit() {
+    sessionStorage.removeItem("adminPwd");
+    adminPwd = "";
+    document.getElementById("admin-content").style.display = "none";
+    document.getElementById("login-screen").style.display = "flex";
+  }
+
+  async function zobrazit() {
+    [hraciData, zapasyData] = await Promise.all([AApi.get("/hraci"), AApi.get("/zapasy")]);
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("admin-content").style.display = "";
+    renderHraci();
+    renderZapasy();
+  }
+
+  function setTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderHraci();
+  }
+
+  function renderHraci() {
+    const hraci = hraciData[currentTab] || [];
+    const tbody = document.getElementById("tbl-hraci");
+    if (!hraci.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Žádní hráči</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = hraci.map((h, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${h.jmeno}</td>
+        <td>${h.prijmeni}</td>
+        <td style="text-align:right">
+          <button class="btn-icon" title="Upravit"
+            data-id="${h.id}" data-jmeno="${escQ(h.jmeno)}" data-prijmeni="${escQ(h.prijmeni)}"
+            onclick="otevritHrace(this)">✏️</button>
+          <button class="btn-icon" title="Smazat"
+            data-id="${h.id}" data-label="${escQ(h.jmeno + ' ' + h.prijmeni)}"
+            onclick="smazatHrace(this)">🗑️</button>
+        </td>
+      </tr>`).join("");
+  }
+
+  function renderZapasy() {
+    const tbody = document.getElementById("tbl-zapasy");
+    const sorted = [...zapasyData].sort((a, b) => new Date(b.datum) - new Date(a.datum));
+    if (!sorted.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Žádné zápasy</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = sorted.map(z => {
+      const h1won = z.vitez_id === z.hrac1_id;
+      const h2won = z.vitez_id === z.hrac2_id;
+      const sets = z.sety.map(s => `${s.h1}:${s.h2}`).join(", ");
+      return `<tr>
+        <td><span class="badge ${z.skupina === 'dospeli' ? 'badge-accent' : 'badge-blue'}">${skupinaLabel(z.skupina)}</span></td>
+        <td style="${h1won ? 'font-weight:700;color:var(--accent)' : ''}">${z.hrac1_jmeno}</td>
+        <td style="${h2won ? 'font-weight:700;color:var(--accent)' : ''}">${z.hrac2_jmeno}</td>
+        <td style="font-size:13px">${z.h1_sety_won}:${z.h2_sety_won} <span style="color:var(--muted)">(${sets})</span></td>
+        <td style="font-size:12px;color:var(--muted)">${formatDate(z.datum)}</td>
+        <td style="text-align:right">
+          <button class="btn-icon" title="Upravit" data-id="${z.id}" onclick="otevritZapas(this)">✏️</button>
+          <button class="btn-icon" title="Smazat"
+            data-id="${z.id}" data-label="${escQ(z.hrac1_jmeno + ' vs ' + z.hrac2_jmeno)}"
+            onclick="smazatZapas(this)">🗑️</button>
+        </td>
+      </tr>`;
+    }).join("");
+  }
+
+  // ---- Hráč ----
+  function otevritHrace(btn) {
+    document.getElementById("eh-id").value = btn.dataset.id;
+    document.getElementById("eh-jmeno").value = btn.dataset.jmeno;
+    document.getElementById("eh-prijmeni").value = btn.dataset.prijmeni;
+    openModal("modalHrac");
+  }
+
+  async function ulozitHrace() {
+    const id = document.getElementById("eh-id").value;
+    const jmeno = document.getElementById("eh-jmeno").value.trim();
+    const prijmeni = document.getElementById("eh-prijmeni").value.trim();
+    if (!jmeno || !prijmeni) return showToast("Vyplň jméno i příjmení", "error");
+    const res = await AApi.put(`/hraci/${id}`, { jmeno, prijmeni });
+    if (res.ok) {
+      showToast("✅ Hráč upraven", "success");
+      closeModal("modalHrac");
+      await nacist();
+    } else {
+      showToast(res.error || "Chyba", "error");
+    }
+  }
+
+  async function smazatHrace(btn) {
+    if (!confirm(`Smazat hráče "${btn.dataset.label}"?\nBudou smazány i všechny jeho zápasy.`)) return;
+    const res = await AApi.del(`/hraci/${btn.dataset.id}`);
+    if (res.ok) { showToast("🗑️ Hráč smazán", "success"); await nacist(); }
+    else showToast(res.error || "Chyba", "error");
+  }
+
+  // ---- Zápas ----
+  function otevritZapas(btn) {
+    const z = zapasyData.find(z => z.id === btn.dataset.id);
+    if (!z) return;
+    document.getElementById("ez-id").value = z.id;
+    document.getElementById("ez-info").textContent = `${z.hrac1_jmeno}  vs  ${z.hrac2_jmeno}`;
+    renderSetyEdit(z.sety);
+    openModal("modalZapas");
+  }
+
+  function renderSetyEdit(sety) {
+    document.getElementById("ez-sety").innerHTML = sety.map((s, i) => setRow(i, s.h1, s.h2)).join("");
+  }
+
+  function setRow(i, h1 = 0, h2 = 0) {
+    return `<div class="set-edit-row">
+      <div class="set-edit-label">Set ${i + 1}</div>
+      <input type="number" class="score-input ez-h1" min="0" max="99" value="${h1}">
+      <div class="score-sep">:</div>
+      <input type="number" class="score-input ez-h2" min="0" max="99" value="${h2}">
+      <button class="btn-icon" onclick="this.closest('.set-edit-row').remove()" title="Odebrat">✕</button>
+    </div>`;
+  }
+
+  function pridatSetEdit() {
+    const cont = document.getElementById("ez-sety");
+    const i = cont.querySelectorAll(".set-edit-row").length;
+    cont.insertAdjacentHTML("beforeend", setRow(i));
+  }
+
+  async function ulozitZapas() {
+    const id = document.getElementById("ez-id").value;
+    const rows = document.getElementById("ez-sety").querySelectorAll(".set-edit-row");
+    const sety = Array.from(rows).map(row => ({
+      h1: parseInt(row.querySelector(".ez-h1").value) || 0,
+      h2: parseInt(row.querySelector(".ez-h2").value) || 0
+    }));
+    const res = await AApi.put(`/zapasy/${id}`, { sety });
+    if (res.ok) {
+      showToast("✅ Zápas upraven", "success");
+      closeModal("modalZapas");
+      await nacist();
+    } else {
+      showToast(res.error || "Chyba", "error");
+    }
+  }
+
+  async function smazatZapas(btn) {
+    if (!confirm(`Smazat zápas "${btn.dataset.label}"?`)) return;
+    const res = await AApi.del(`/zapasy/${btn.dataset.id}`);
+    if (res.ok) { showToast("🗑️ Zápas smazán", "success"); await nacist(); }
+    else showToast(res.error || "Chyba", "error");
+  }
+
+  async function nacist() {
+    [hraciData, zapasyData] = await Promise.all([AApi.get("/hraci"), AApi.get("/zapasy")]);
+    renderHraci();
+    renderZapasy();
+  }
+
+  document.getElementById("login-pwd").addEventListener("keydown", e => { if (e.key === "Enter") prihlasit(); });
+
+  if (adminPwd) zobrazit();
+</script>
+</body>
+</html>

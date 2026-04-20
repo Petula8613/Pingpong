@@ -31,6 +31,17 @@ app.use(express.static(path.join(__dirname, "public")));
 const readJSON = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
 const writeJSON = (file, data) => fs.writeFileSync(file, JSON.stringify(data, null, 2));
 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
+const adminAuth = (req, res, next) => {
+  if (req.headers["x-admin-password"] !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Nesprávné heslo" });
+  }
+  next();
+};
+
+// ---- Admin verify ----
+app.get("/api/admin/verify", adminAuth, (req, res) => res.json({ ok: true }));
+
 // ---- Config ----
 app.get("/api/config", (req, res) => {
   res.json(readJSON(CONFIG_FILE));
@@ -62,7 +73,33 @@ app.post("/api/hraci", (req, res) => {
   res.json({ ok: true, hrac });
 });
 
-app.delete("/api/hraci/:id", (req, res) => {
+app.put("/api/hraci/:id", adminAuth, (req, res) => {
+  const { jmeno, prijmeni } = req.body;
+  if (!jmeno || !prijmeni) return res.status(400).json({ error: "Chybná data" });
+  const hraci = readJSON(HRACI_FILE);
+  let updated = null;
+  ["dospeli", "dorost"].forEach(sk => {
+    const idx = hraci[sk].findIndex(h => h.id === req.params.id);
+    if (idx !== -1) {
+      hraci[sk][idx].jmeno = jmeno.trim();
+      hraci[sk][idx].prijmeni = prijmeni.trim();
+      updated = hraci[sk][idx];
+    }
+  });
+  if (!updated) return res.status(404).json({ error: "Hráč nenalezen" });
+  // Update name in matches too
+  const zapasy = readJSON(ZAPASY_FILE);
+  const plneJmeno = `${updated.jmeno} ${updated.prijmeni}`;
+  zapasy.forEach(z => {
+    if (z.hrac1_id === req.params.id) z.hrac1_jmeno = plneJmeno;
+    if (z.hrac2_id === req.params.id) z.hrac2_jmeno = plneJmeno;
+  });
+  writeJSON(HRACI_FILE, hraci);
+  writeJSON(ZAPASY_FILE, zapasy);
+  res.json({ ok: true });
+});
+
+app.delete("/api/hraci/:id", adminAuth, (req, res) => {
   const { id } = req.params;
   const hraci = readJSON(HRACI_FILE);
   hraci.dospeli = hraci.dospeli.filter(h => h.id !== id);
@@ -144,7 +181,26 @@ app.post("/api/zapasy", (req, res) => {
   res.json({ ok: true, zapas });
 });
 
-app.delete("/api/zapasy/:id", (req, res) => {
+app.put("/api/zapasy/:id", adminAuth, (req, res) => {
+  const { sety } = req.body;
+  if (!sety || !Array.isArray(sety)) return res.status(400).json({ error: "Chybná data" });
+  const zapasy = readJSON(ZAPASY_FILE);
+  const idx = zapasy.findIndex(z => z.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: "Zápas nenalezen" });
+  const z = zapasy[idx];
+  const platne = sety.filter(s => s.h1 > 0 || s.h2 > 0);
+  z.sety = platne;
+  let h1 = 0, h2 = 0;
+  platne.forEach(s => { if (s.h1 > s.h2) h1++; else if (s.h2 > s.h1) h2++; });
+  z.h1_sety_won = h1;
+  z.h2_sety_won = h2;
+  z.vitez_id = h1 > h2 ? z.hrac1_id : h2 > h1 ? z.hrac2_id : null;
+  zapasy[idx] = z;
+  writeJSON(ZAPASY_FILE, zapasy);
+  res.json({ ok: true, zapas: z });
+});
+
+app.delete("/api/zapasy/:id", adminAuth, (req, res) => {
   let zapasy = readJSON(ZAPASY_FILE);
   zapasy = zapasy.filter(z => z.id !== req.params.id);
   writeJSON(ZAPASY_FILE, zapasy);
