@@ -593,18 +593,15 @@ function updatePlayerLabels() {
        (z.hrac1_id === h2id && z.hrac2_id === h1id))
     );
     if (predchozi.length) {
-      const vysledky = predchozi.map(z => {
-        const jsemH1 = z.hrac1_id === h1id;
-        const moje = jsemH1 ? z.h1_sety_won : z.h2_sety_won;
-        const jejich = jsemH1 ? z.h2_sety_won : z.h1_sety_won;
-        const sety = z.sety.map(s => jsemH1 ? `${s.h1}:${s.h2}` : `${s.h2}:${s.h1}`).join(", ");
-        return `<strong>${moje}:${jejich}</strong> na sety (${sety})`;
-      }).join(" &nbsp;|&nbsp; ");
-      const pocet = predchozi.length;
+      const posledni = predchozi.reduce((a, b) => new Date(a.datum) > new Date(b.datum) ? a : b);
+      const jsemH1 = posledni.hrac1_id === h1id;
+      const moje = jsemH1 ? posledni.h1_sety_won : posledni.h2_sety_won;
+      const jejich = jsemH1 ? posledni.h2_sety_won : posledni.h1_sety_won;
+      const setyDetail = posledni.sety.map(s => jsemH1 ? `${s.h1}:${s.h2}` : `${s.h2}:${s.h1}`).join(", ");
       warn.style.display = "";
       warn.innerHTML = `<div style="background:rgba(255,165,2,.12);border:1px solid rgba(255,165,2,.35);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--warn)">
-        ⚠️ Tito hráči již odehráli ${pocet} zápas${pocet > 1 ? "y" : ""}:&nbsp; ${vysledky}<br>
-        <span style="color:var(--muted);font-size:11px">Uložením přidáš další zápas.</span>
+        ⚠️ Tito hráči již mají zápas: <strong>${moje}:${jejich}</strong> na sety (${setyDetail})<br>
+        <span style="color:var(--muted);font-size:11px">Nové sety budou přidány do tohoto záznamu.</span>
       </div>`;
     } else {
       warn.style.display = "none";
@@ -645,7 +642,25 @@ async function ulozitZapas() {
   const hrac1name = document.getElementById("z-hrac1").options[document.getElementById("z-hrac1").selectedIndex].text;
   const hrac2name = document.getElementById("z-hrac2").options[document.getElementById("z-hrac2").selectedIndex].text;
 
-  const res = await API.post("/zapasy", { skupina, hrac1_id, hrac2_id, sety });
+  // Pokud zápas již existuje, přidej sety do stávajícího záznamu
+  const predchozi = allZapasy.filter(z =>
+    z.skupina === skupina &&
+    ((z.hrac1_id === hrac1_id && z.hrac2_id === hrac2_id) ||
+     (z.hrac1_id === hrac2_id && z.hrac2_id === hrac1_id))
+  );
+  const existujici = predchozi.length
+    ? predchozi.reduce((a, b) => new Date(a.datum) > new Date(b.datum) ? a : b)
+    : null;
+
+  let res;
+  if (existujici) {
+    const jsemH1 = existujici.hrac1_id === hrac1_id;
+    const setyNorm = jsemH1 ? sety : sety.map(s => ({ h1: s.h2, h2: s.h1 }));
+    res = await API.patch(`/zapasy/${existujici.id}`, { sety: setyNorm });
+  } else {
+    res = await API.post("/zapasy", { skupina, hrac1_id, hrac2_id, sety });
+  }
+
   if (res.ok) {
     const h1s = res.zapas.h1_sety_won;
     const h2s = res.zapas.h2_sety_won;

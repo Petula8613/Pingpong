@@ -43,6 +43,14 @@ const API = {
     });
     return r.json();
   },
+  async patch(path, data) {
+    const r = await fetch(this.base + path, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    return r.json();
+  },
   async del(path) {
     const r = await fetch(this.base + path, { method: "DELETE" });
     return r.json();

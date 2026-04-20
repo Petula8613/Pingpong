@@ -151,6 +151,31 @@ app.delete("/api/zapasy/:id", (req, res) => {
   res.json({ ok: true });
 });
 
+app.patch("/api/zapasy/:id", (req, res) => {
+  const { sety: noveSety } = req.body;
+  if (!noveSety || !Array.isArray(noveSety)) {
+    return res.status(400).json({ error: "Chybná data" });
+  }
+  const zapasy = readJSON(ZAPASY_FILE);
+  const idx = zapasy.findIndex(z => z.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: "Zápas nenalezen" });
+
+  const z = zapasy[idx];
+  const platne = noveSety.filter(s => s.h1 > 0 || s.h2 > 0);
+  z.sety = [...z.sety, ...platne];
+
+  let h1 = 0, h2 = 0;
+  z.sety.forEach(s => { if (s.h1 > s.h2) h1++; else if (s.h2 > s.h1) h2++; });
+  z.h1_sety_won = h1;
+  z.h2_sety_won = h2;
+  z.vitez_id = h1 > h2 ? z.hrac1_id : h2 > h1 ? z.hrac2_id : null;
+  z.datum = new Date().toISOString();
+
+  zapasy[idx] = z;
+  writeJSON(ZAPASY_FILE, zapasy);
+  res.json({ ok: true, zapas: z });
+});
+
 // ---- Stats endpoint (computed) ----
 app.get("/api/stats", (req, res) => {
   const hraci = readJSON(HRACI_FILE);
