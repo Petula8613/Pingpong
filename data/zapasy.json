@@ -1,0 +1,102 @@
+[
+  {
+    "id": "1776671257249",
+    "skupina": "dospeli",
+    "hrac1_id": "1776670221889",
+    "hrac2_id": "1776670254619",
+    "hrac1_jmeno": "Petr Mrňa",
+    "hrac2_jmeno": "Petr Syrový",
+    "sety": [
+      {
+        "h1": 6,
+        "h2": 11
+      },
+      {
+        "h1": 11,
+        "h2": 6
+      }
+    ],
+    "h1_sety_won": 1,
+    "h2_sety_won": 1,
+    "vitez_id": null,
+    "datum": "2026-04-20T07:47:37.249Z"
+  },
+  {
+    "id": "1776671729653",
+    "skupina": "dospeli",
+    "hrac1_id": "1776670221889",
+    "hrac2_id": "1776670261227",
+    "hrac1_jmeno": "Petr Mrňa",
+    "hrac2_jmeno": "David Mrňa",
+    "sety": [
+      {
+        "h1": 11,
+        "h2": 6
+      },
+      {
+        "h1": 11,
+        "h2": 5
+      },
+      {
+        "h1": 0,
+        "h2": 0
+      }
+    ],
+    "h1_sety_won": 2,
+    "h2_sety_won": 0,
+    "vitez_id": "1776670221889",
+    "datum": "2026-04-20T07:55:29.653Z"
+  },
+  {
+    "id": "1776671748297",
+    "skupina": "dospeli",
+    "hrac1_id": "1776670254619",
+    "hrac2_id": "1776670261227",
+    "hrac1_jmeno": "Petr Syrový",
+    "hrac2_jmeno": "David Mrňa",
+    "sety": [
+      {
+        "h1": 11,
+        "h2": 6
+      },
+      {
+        "h1": 11,
+        "h2": 7
+      },
+      {
+        "h1": 0,
+        "h2": 0
+      }
+    ],
+    "h1_sety_won": 2,
+    "h2_sety_won": 0,
+    "vitez_id": "1776670254619",
+    "datum": "2026-04-20T07:55:48.297Z"
+  },
+  {
+    "id": "1776671819635",
+    "skupina": "dospeli",
+    "hrac1_id": "1776670221889",
+    "hrac2_id": "1776670254619",
+    "hrac1_jmeno": "Petr Mrňa",
+    "hrac2_jmeno": "Petr Syrový",
+    "sety": [
+      {
+        "h1": 11,
+        "h2": 9
+      },
+      {
+        "h1": 0,
+        "h2": 0
+      },
+      {
+        "h1": 0,
+        "h2": 0
+      }
+    ],
+    "h1_sety_won": 1,
+    "h2_sety_won": 0,
+    "vitez_id": "1776670221889",
+    "datum": "2026-04-20T07:56:59.635Z"
+  }
+]

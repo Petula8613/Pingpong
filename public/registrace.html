@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrace – Pingpong Turnaj</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .reg-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+        
+        .reg-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 680px;
+            margin-top: 32px;
+        }
+        
+        .group-list {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+        
+        .group-list h3 {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .group-list h3 .badge {
+            font-size: 12px;
+        }
+        
+        .player-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: fadeItem .3s ease;
+        }
+        
+        .player-item:last-child {
+            border-bottom: none;
+        }
+        
+        .player-num {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-weight: 700;
+            color: var(--muted);
+            min-width: 22px;
+        }
+        
+        @keyframes fadeItem {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .empty-state {
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+            padding: 12px 0;
+        }
+        
+        @media(max-width:640px) {
+            .reg-split {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="site-header">
+        <a href="registrace.html" class="logo">
+            <div class="logo-icon">🏓</div>
+            Ping<span>Pong</span> Turnaj
+        </a>
+        <div class="header-nav">
+            <a href="turnaj.html" target="_blank">Turnaj</a>
+            <a href="registrace.html" class="active">Registrace</a>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <div class="hero">
+        <div class="hero-bg"></div>
+
+        <div class="hero-icon">🏓</div>
+        <h1 class="hero-title" id="nazev-turnaje">Pingpong<br><span>Turnaj</span></h1>
+        <p class="hero-sub" id="hero-sub">Turnaj začíná za:</p>
+
+        <!-- Countdown -->
+        <div class="countdown" id="countdown">
+            <div class="countdown-unit"><span class="countdown-num" id="cd-days">00</span><span class="countdown-lbl">Dnů</span></div>
+            <div class="countdown-unit"><span class="countdown-num" id="cd-hours">00</span><span class="countdown-lbl">Hodin</span></div>
+            <div class="countdown-unit"><span class="countdown-num" id="cd-mins">00</span><span class="countdown-lbl">Minut</span></div>
+            <div class="countdown-unit"><span class="countdown-num" id="cd-secs">00</span><span class="countdown-lbl">Sekund</span></div>
+        </div>
+
+        <!-- Registration form -->
+        <div class="reg-form" id="reg-form">
+            <h2>📋 Registrace hráče</h2>
+
+            <div class="form-group">
+                <label class="form-label">Skupina</label>
+                <div class="radio-group">
+                    <div class="radio-btn">
+                        <input type="radio" name="skupina" id="sk-dospeli" value="dospeli" checked>
+                        <label for="sk-dospeli">🏆 Dospělí</label>
+                    </div>
+                    <div class="radio-btn">
+                        <input type="radio" name="skupina" id="sk-dorost" value="dorost">
+                        <label for="sk-dorost">⭐ Dorost</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="jmeno">Jméno</label>
+                <input type="text" id="jmeno" class="form-control" placeholder="Zadej jméno…" autocomplete="given-name">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="prijmeni">Příjmení</label>
+                <input type="text" id="prijmeni" class="form-control" placeholder="Zadej příjmení…" autocomplete="family-name">
+            </div>
+
+            <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="registrovat()">
+      💾 Uložit registraci
+    </button>
+        </div>
+
+        <!-- Player lists -->
+        <div class="reg-split" id="player-lists">
+            <div class="group-list">
+                <h3>🏆 Dospělí <span class="badge badge-accent" id="count-dospeli">0</span></h3>
+                <div id="list-dospeli">
+                    <p class="empty-state">Zatím žádní hráči</p>
+                </div>
+            </div>
+            <div class="group-list">
+                <h3>⭐ Dorost <span class="badge badge-blue" id="count-dorost">0</span></h3>
+                <div id="list-dorost">
+                    <p class="empty-state">Zatím žádní hráči</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast container injected by app.js -->
+    <script src="app.js"></script>
+    <script>
+        let config = {};
+
+        async function init() {
+            config = await API.get("/config");
+            document.getElementById("nazev-turnaje").innerHTML = config.nazev_turnaje.replace(" ", "<br><span>").replace(/(\w+)$/, "$1</span>");
+            startCountdown(config.datum_turnaje);
+            await nacistHrace();
+        }
+
+        function startCountdown(datumStr) {
+            const target = new Date(datumStr).getTime();
+
+            function tick() {
+                const diff = target - Date.now();
+                if (diff <= 0) {
+                    document.getElementById("countdown").innerHTML = '<div style="color:var(--accent);font-family:\'Barlow Condensed\',sans-serif;font-size:28px;font-weight:900">🏓 TURNAJ PROBÍHÁ!</div>';
+                    return;
+                }
+                const d = Math.floor(diff / 86400000);
+                const h = Math.floor((diff % 86400000) / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                document.getElementById("cd-days").textContent = String(d).padStart(2, "0");
+                document.getElementById("cd-hours").textContent = String(h).padStart(2, "0");
+                document.getElementById("cd-mins").textContent = String(m).padStart(2, "0");
+                document.getElementById("cd-secs").textContent = String(s).padStart(2, "0");
+            }
+            tick();
+            setInterval(tick, 1000);
+        }
+
+        async function nacistHrace() {
+            const hraci = await API.get("/hraci");
+            renderList("dospeli", hraci.dospeli);
+            renderList("dorost", hraci.dorost);
+            document.getElementById("count-dospeli").textContent = hraci.dospeli.length;
+            document.getElementById("count-dorost").textContent = hraci.dorost.length;
+        }
+
+        function renderList(skupina, hraci) {
+            const el = document.getElementById("list-" + skupina);
+            if (!hraci.length) {
+                el.innerHTML = '<p class="empty-state">Zatím žádní hráči</p>';
+                return;
+            }
+            el.innerHTML = hraci.map((h, i) => `
+    <div class="player-item">
+      <span class="player-num">${i + 1}.</span>
+      ${h.jmeno} ${h.prijmeni}
+    </div>
+  `).join("");
+        }
+
+        async function registrovat() {
+            const skupina = document.querySelector('input[name="skupina"]:checked').value;
+            const jmeno = document.getElementById("jmeno").value.trim();
+            const prijmeni = document.getElementById("prijmeni").value.trim();
+
+            if (!jmeno || !prijmeni) {
+                showToast("Vyplň prosím jméno i příjmení.", "error");
+                return;
+            }
+
+            const res = await API.post("/hraci", {
+                jmeno,
+                prijmeni,
+                skupina
+            });
+            if (res.ok) {
+                showToast(`✅ ${jmeno} ${prijmeni} byl/a úspěšně zaregistrován/a do skupiny ${skupinaLabel(skupina)}!`, "success", 4000);
+                document.getElementById("jmeno").value = "";
+                document.getElementById("prijmeni").value = "";
+                await nacistHrace();
+            } else {
+                showToast("Chyba při ukládání: " + (res.error || "Neznámá chyba"), "error");
+            }
+        }
+
+        // Enter key submit
+        document.addEventListener("keydown", e => {
+            if (e.key === "Enter" && (document.activeElement.id === "jmeno" || document.activeElement.id === "prijmeni")) {
+                registrovat();
+            }
+        });
+
+        init();
+    </script>
+</body>
+
+</html>

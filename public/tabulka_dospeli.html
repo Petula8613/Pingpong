@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tabulka – Dospělí | Pingpong Turnaj</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: var(--bg); }
+    .page { padding: 24px 0 60px; }
+    .cross-table { border-collapse: collapse; width: 100%; }
+    .cross-table th, .cross-table td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      font-size: 13px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .cross-table thead th {
+      background: var(--bg3);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .cross-table .name-col {
+      text-align: left;
+      min-width: 130px;
+      font-weight: 600;
+      background: var(--bg2);
+    }
+    .cross-table .num-col {
+      background: var(--bg3);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 16px;
+      color: var(--muted);
+      min-width: 36px;
+    }
+    .cross-table .self-cell {
+      background: var(--bg3);
+      color: var(--border);
+    }
+    .result-cell { min-width: 70px; }
+    .result-cell.won { background: rgba(0,229,160,.07); }
+    .result-cell.lost { background: rgba(255,71,87,.05); }
+    .result-sets {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+    }
+    .result-sets.won-sets { color: var(--accent); }
+    .result-sets.lost-sets { color: var(--danger); }
+    .result-scores { font-size: 10px; color: var(--muted); line-height: 1.4; }
+    .result-cell.won  { background: rgba(0,229,160,.10) !important; }
+    .result-cell.lost { background: rgba(255,71,87,.10) !important; }
+    .result-cell.draw { background: rgba(255,165,2,.10); }
+    .result-sets.draw-sets { color: var(--warn); font-weight: 900; }
+    .empty-cell { color: var(--border); font-size: 18px; }
+    .summary-col { background: var(--bg3); }
+    .summary-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .summary-lbl { font-size: 10px; color: var(--muted); }
+
+    .legend { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .legend-box { width: 14px; height: 14px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="index.html" class="logo">
+    <div class="logo-icon">🏓</div>
+    Ping<span>Pong</span> Turnaj
+  </a>
+  <div class="header-nav">
+    <a href="index.html">← Zpět na turnaj</a>
+    <a href="tabulka_dorost.html" target="_blank">Tabulka Dorost</a>
+  </div>
+</header>
+
+<div class="container page">
+  <div class="section-head" style="margin-bottom:20px">
+    <div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:.5px">
+        🏆 Tabulka – <span style="color:var(--accent)">Dospělí</span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px">Vzájemné výsledky · automaticky aktualizováno</div>
+    </div>
+    <div style="font-size:12px;color:var(--muted)" id="last-update"></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-box" style="background:rgba(0,229,160,.15)"></div> Výhra</div>
+    <div class="legend-item"><div class="legend-box" style="background:rgba(255,71,87,.1)"></div> Prohra</div>
+    <div class="legend-item"><div class="legend-box" style="background:rgba(255,165,2,.3)"></div> Remíza · <div class="legend-box" style="background:var(--bg3);margin-left:8px"></div> Nehrána / vlastní</div>
+  </div>
+
+  <div style="overflow-x:auto" class="card">
+    <div class="card-body" style="padding:0" id="table-container">
+      <p style="padding:40px;text-align:center;color:var(--muted)">Načítám…</p>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const SKUPINA = "dospeli";
+
+async function render() {
+  const [hraci, zapasy] = await Promise.all([
+    API.get("/hraci"),
+    API.get("/zapasy")
+  ]);
+
+  const hraciList = hraci[SKUPINA] || [];
+  const zapasySkupiny = zapasy.filter(z => z.skupina === SKUPINA);
+
+  document.getElementById("last-update").textContent = "Poslední aktualizace: " + new Date().toLocaleTimeString("cs-CZ");
+
+  if (!hraciList.length) {
+    document.getElementById("table-container").innerHTML = '<p style="padding:40px;text-align:center;color:var(--muted)">Žádní hráči v skupině Dospělí</p>';
+    return;
+  }
+
+  // Build lookup map
+  const zapasMap = {};
+  zapasySkupiny.forEach(z => {
+    zapasMap[`${z.hrac1_id}_${z.hrac2_id}`] = z;
+  });
+
+  function getZapas(ida, idb) {
+    return zapasMap[`${ida}_${idb}`] || zapasMap[`${idb}_${ida}`] || null;
+  }
+
+  // Compute summary stats
+  const stats = hraciList.map(h => {
+    let vyhry = 0, prohry = 0, sety_za = 0, sety_proti = 0;
+    hraciList.forEach(opp => {
+      if (opp.id === h.id) return;
+      const z = getZapas(h.id, opp.id);
+      if (!z) return;
+      const jsemH1 = z.hrac1_id === h.id;
+      const jsemH1z = z.hrac1_id === h.id;
+      vyhry  += jsemH1z ? z.h1_sety_won : z.h2_sety_won;
+      prohry += jsemH1z ? z.h2_sety_won : z.h1_sety_won;
+      sety_za    += jsemH1 ? z.h1_sety_won : z.h2_sety_won;
+      sety_proti += jsemH1 ? z.h2_sety_won : z.h1_sety_won;
+    });
+    return { ...h, vyhry, prohry, body: vyhry, sety_za, sety_proti };
+  }).sort((a,b) => {
+    if (b.body !== a.body) return b.body - a.body;
+    // Vzajemne body ze spolecnych zapasu
+    const spol = zapasySkupiny.filter(z =>
+      (z.hrac1_id === a.id && z.hrac2_id === b.id) ||
+      (z.hrac1_id === b.id && z.hrac2_id === a.id)
+    );
+    let bA = 0, bB = 0;
+    spol.forEach(z => {
+      const aJeH1 = z.hrac1_id === a.id;
+      z.sety.filter(s => s.h1 > 0 || s.h2 > 0).forEach(s => { bA += aJeH1?s.h1:s.h2; bB += aJeH1?s.h2:s.h1; });
+    });
+    return bB - bA;
+  });
+
+  // Header
+  const headerCells = stats.map((h, i) =>
+    `<th title="${h.jmeno} ${h.prijmeni}">${i+1}</th>`
+  ).join("");
+
+  // Rows
+  const rows = stats.map((h, ri) => {
+    const cells = stats.map((opp) => {
+      if (h.id === opp.id) return `<td class="self-cell">×</td>`;
+      const z = getZapas(h.id, opp.id);
+      if (!z) return `<td class="empty-cell result-cell">·</td>`;
+
+      const jsemH1 = z.hrac1_id === h.id;
+      const moje_sety   = jsemH1 ? z.h1_sety_won : z.h2_sety_won;
+      const jejich_sety = jsemH1 ? z.h2_sety_won : z.h1_sety_won;
+      const isDraw = !z.vitez_id;
+      const vyhrál = !isDraw && z.vitez_id === h.id;
+
+      const setLines = z.sety
+        .filter(s => s.h1 > 0 || s.h2 > 0)
+        .map(s => {
+          const ms = jsemH1 ? s.h1 : s.h2;
+          const js = jsemH1 ? s.h2 : s.h1;
+          return `${ms}:${js}`;
+        }).join("<br>");
+
+      const cellClass = isDraw ? 'draw' : vyhrál ? 'won' : 'lost';
+      const setsClass = isDraw ? 'draw-sets' : vyhrál ? 'won-sets' : 'lost-sets';
+      return `<td class="result-cell ${cellClass}">
+        <div class="result-sets ${setsClass}">${moje_sety}:${jejich_sety}</div>
+        <div class="result-scores">${setLines}</div>
+      </td>`;
+    }).join("");
+
+    const medal = ["🥇","🥈","🥉"][ri] || `${ri+1}.`;
+
+    return `<tr>
+      <td class="num-col">${medal}</td>
+      <td class="name-col">${h.jmeno} ${h.prijmeni}</td>
+      ${cells}
+      <td class="summary-col">
+        <div class="summary-val" style="color:var(--accent)">${h.vyhry}V</div>
+        <div class="summary-lbl">výhry</div>
+      </td>
+      <td class="summary-col">
+        <div class="summary-val" style="color:var(--danger)">${h.prohry}P</div>
+        <div class="summary-lbl">prohry</div>
+      </td>
+      <td class="summary-col">
+        <div class="summary-val">${h.sety_za}:${h.sety_proti}</div>
+        <div class="summary-lbl">sety</div>
+      </td>
+      <td class="summary-col">
+        <div class="summary-val" style="color:var(--accent2)">${h.body}</div>
+        <div class="summary-lbl">body</div>
+      </td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("table-container").innerHTML = `
+    <table class="cross-table">
+      <thead>
+        <tr>
+          <th style="width:36px">#</th>
+          <th class="name-col" style="text-align:left">Hráč</th>
+          ${headerCells}
+          <th>V</th><th>P</th><th>Sety</th><th>Body</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+render();
+setInterval(render, 30000);
+</script>
+</body>
+</html>

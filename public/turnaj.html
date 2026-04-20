@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnaj – Pingpong</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .page {
+            padding: 24px 0 60px;
+        }
+        
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .section-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        
+        .section-title span {
+            color: var(--accent);
+        }
+        /* Standings */
+        
+        .standings-wrap {
+            display: grid;
+            gap: 24px;
+        }
+        
+        .points-bar {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        
+        .pt {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--accent);
+            min-width: 30px;
+        }
+        
+        .win-rate {
+            font-size: 11px;
+            color: var(--muted);
+        }
+        
+        .stat-cell {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        
+        .stat-pos {
+            color: var(--accent);
+        }
+        
+        .stat-neg {
+            color: var(--danger);
+        }
+        /* Match form modal */
+        
+        .set-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .set-row {
+            display: grid;
+            grid-template-columns: 1fr 40px 1fr;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+        
+        .set-row-label {
+            grid-column: 1/-1;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        
+        .player-names {
+            display: grid;
+            grid-template-columns: 1fr 40px 1fr;
+            gap: 10px;
+            padding: 0 14px;
+            margin-bottom: 6px;
+        }
+        
+        .player-name-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--accent);
+            text-align: center;
+        }
+        /* Match history */
+        
+        .matches-section {
+            margin-top: 32px;
+        }
+        
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 5px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .5px;
+            transition: all .15s;
+        }
+        
+        .filter-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(0, 229, 160, .07);
+        }
+        /* Round robin */
+        
+        .rr-section {
+            margin-top: 32px;
+        }
+        
+        .rr-won {
+            color: var(--accent);
+            font-weight: 700;
+        }
+        
+        .rr-lost {
+            color: var(--danger);
+        }
+        
+        td.rr-won  { background: rgba(0,229,160,.12) !important; color: var(--accent);  font-weight: 700; }
+        td.rr-lost { background: rgba(255,71,87,.12)  !important; color: var(--danger); }
+        td.rr-draw { background: rgba(255,165,2,.14)  !important; color: var(--warn);   font-weight: 700; }
+        
+        .rr-empty {
+            color: var(--border);
+        }
+        
+        .rr-self {
+            background: var(--bg3) !important;
+        }
+        
+        .rr-score-line {
+            font-size: 10px;
+            color: var(--muted);
+        }
+        /* Auto refresh badge */
+        
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 229, 160, .1);
+            border: 1px solid rgba(0, 229, 160, .3);
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+        
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1
+            }
+            50% {
+                opacity: .3
+            }
+        }
+        
+        .empty-matches {
+            text-align: center;
+            padding: 40px;
+            color: var(--muted);
+        }
+        
+        .empty-matches .icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="site-header">
+        <a href="index.html" class="logo">
+            <div class="logo-icon">🏓</div>
+            Ping<span>Pong</span> Turnaj
+        </a>
+        <div class="header-nav">
+            <button onclick="openModal('modalZapas'); nacistHraceModal()" class="btn btn-primary btn-sm">+ Zapsat zápas</button>
+            <a href="registrace.html" target="_blank">Registrace</a>
+            <a href="tabulka_dospeli.html" target="_blank">Tabulka Dospělí</a>
+            <a href="tabulka_dorost.html" target="_blank">Tabulka Dorost</a>
+        </div>
+    </header>
+
+    <div class="container page">
+
+        <!-- Section head -->
+        <div class="section-head" style="margin-bottom:24px">
+            <div>
+                <div class="section-title">📊 Průběh <span>Turnaje</span></div>
+                <div style="font-size:13px;color:var(--muted);margin-top:2px" id="datum-info"></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <div class="live-badge"><span class="live-dot"></span> Live</div>
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="setTab('dospeli',this)">🏆 Dospělí</button>
+                    <button class="tab-btn" onclick="setTab('dorost',this)">⭐ Dorost</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STANDINGS TABLE -->
+        <div id="standings-section">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title" id="standings-title">Pořadí – Dospělí</div>
+                    <div style="font-size:12px;color:var(--muted)">1 bod za vyhraný set</div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:40px">#</th>
+                                <th>Hráč</th>
+                                <th>Odehráno</th>
+                                <th>Zbývá</th>
+                                <th>V</th>
+                                <th>P</th>
+                                <th>Sety</th>
+                                <th>Body</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-body">
+                            <tr>
+                                <td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">Načítám…</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROUND ROBIN GRID -->
+        <div class="rr-section">
+            <div class="section-head">
+                <div class="section-title">📋 Rozpis <span>zápasů</span></div>
+            </div>
+            <div class="card">
+                <div class="card-body rr-wrap" id="rr-container">
+                    <p style="color:var(--muted);text-align:center;padding:20px">Načítám…</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MATCH HISTORY -->
+        <div class="matches-section">
+            <div class="section-head">
+                <div class="section-title">⚡ Odehrané <span>zápasy</span></div>
+                <div class="filter-bar">
+                    <button class="filter-btn active" onclick="setFilter('vse',this)">Vše</button>
+                    <button class="filter-btn" onclick="setFilter('dospeli',this)">Dospělí</button>
+                    <button class="filter-btn" onclick="setFilter('dorost',this)">Dorost</button>
+                </div>
+            </div>
+            <div class="match-grid" id="match-grid">
+                <div class="empty-matches">
+                    <div class="icon">🏓</div>
+                    <p>Zatím žádné zápasy</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== MODAL – ZAPSAT ZÁPAS ===================== -->
+    <div class="modal-backdrop" id="modalZapas">
+        <div class="modal" style="max-width:580px">
+            <div class="modal-header">
+                <div class="modal-title">⚡ Zapsat zápas</div>
+                <button class="modal-close" onclick="closeModal('modalZapas')">✕</button>
+            </div>
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label class="form-label">Skupina</label>
+                    <div class="radio-group">
+                        <div class="radio-btn"><input type="radio" name="z-skupina" id="zs-dospeli" value="dospeli" checked onchange="nacistHraceModal()"><label for="zs-dospeli">🏆 Dospělí</label></div>
+                        <div class="radio-btn"><input type="radio" name="z-skupina" id="zs-dorost" value="dorost" onchange="nacistHraceModal()"><label for="zs-dorost">⭐ Dorost</label></div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="form-group">
+                        <label class="form-label">Hráč 1</label>
+                        <select id="z-hrac1" class="form-control" onchange="updatePlayerLabels()">
+            <option value="">— vyber hráče —</option>
+          </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Hráč 2</label>
+                        <select id="z-hrac2" class="form-control" onchange="updatePlayerLabels()">
+            <option value="">— vyber hráče —</option>
+          </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Skóre setů</label>
+                    <div class="player-names">
+                        <div class="player-name-label" id="plabel1">Hráč 1</div>
+                        <div></div>
+                        <div class="player-name-label" id="plabel2">Hráč 2</div>
+                    </div>
+                    <div class="set-rows" id="set-rows">
+                        <!-- rendered by JS -->
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modalZapas')">Zrušit</button>
+                <button class="btn btn-primary" onclick="ulozitZapas()">💾 Uložit zápas</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let currentTab = "dospeli";
+        let currentFilter = "vse";
+        let allHraci = {
+            dospeli: [],
+            dorost: []
+        };
+        let allZapasy = [];
+        let allStats = {
+            dospeli: [],
+            dorost: []
+        };
+        let config = {};
+
+        // ---- Tabs ----
+        function setTab(tab, btn) {
+            currentTab = tab;
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderStandings();
+            renderRR();
+        }
+
+        function setFilter(f, btn) {
+            currentFilter = f;
+            document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderMatches();
+        }
+
+        // ---- Data load ----
+        async function loadAll() {
+            [config, allHraci, allZapasy, allStats] = await Promise.all([
+                API.get("/config"),
+                API.get("/hraci"),
+                API.get("/zapasy"),
+                API.get("/stats")
+            ]);
+            document.getElementById("datum-info").textContent = "Datum turnaje: " + formatDate(config.datum_turnaje);
+            renderStandings();
+            renderRR();
+            renderMatches();
+        }
+
+        // ---- Standings ----
+        function renderStandings() {
+            const data = (allStats[currentTab]) || [];
+            //const playoffIds = (allStats.playoff ? .[currentTab] || []).flat();
+            const playoffIds = (allStats.playoff ? allStats.playoff[currentTab] || [] : []).flat();
+            document.getElementById("standings-title").textContent = `Pořadí – ${skupinaLabel(currentTab)}`;
+            const tbody = document.getElementById("standings-body");
+
+            if (!data.length) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">Žádní hráči v této skupině</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map((h, i) => {
+                const pos = i + 1;
+                const podiumClass = pos <= 3 ? `podium-${pos}` : "";
+                const medal = ["🥇", "🥈", "🥉"][i] || pos;
+                const setyRatio = `${h.sety_za}:${h.sety_proti}`;
+                const progress = h.odehrano + h.zbyvajicich > 0 ?
+                    Math.round(h.odehrano / (h.odehrano + h.zbyvajicich) * 100) : 0;
+
+                return `<tr class="${podiumClass}">
+      <td class="rank-cell">${medal}</td>
+      <td style="min-width:140px">
+        <div style="font-weight:600">${h.jmeno} ${h.prijmeni}</div>
+        <div class="progress-bar" style="margin-top:4px;width:80px">
+          <div class="progress-fill" style="width:${progress}%"></div>
+        </div>
+      </td>
+      <td><span class="stat-cell">${h.odehrano}</span></td>
+      <td><span class="stat-cell ${h.zbyvajicich > 0 ? 'stat-neg' : ''}">${h.zbyvajicich}</span></td>
+      <td><span class="stat-cell stat-pos">${h.vyhry}</span></td>
+      <td><span class="stat-cell stat-neg">${h.prohry}</span></td>
+      <td><span class="stat-cell">${setyRatio}</span></td>
+      <td>
+        <span class="stat-cell" style="font-size:20px;color:var(--accent)">${h.body}</span>
+        ${playoffIds.includes(h.id) ? '<span class="badge badge-warn" style="margin-left:6px" title="Nutný rozhodující zápas!">⚡ play-off</span>' : ''}
+      </td>
+    </tr>`;
+            }).join("");
+        }
+
+        // ---- Round Robin Grid ----
+        function renderRR() {
+            const hraci = allHraci[currentTab] || [];
+            const zapasy = allZapasy.filter(z => z.skupina === currentTab);
+            const cont = document.getElementById("rr-container");
+
+            if (hraci.length < 2) {
+                cont.innerHTML = `<p style="color:var(--muted);text-align:center;padding:20px">Pro zobrazení rozpisu je potřeba alespoň 2 hráči.</p>`;
+                return;
+            }
+
+            // Map: hrac1_id + hrac2_id -> zapas
+            const zapasMap = {};
+            zapasy.forEach(z => {
+                zapasMap[`${z.hrac1_id}_${z.hrac2_id}`] = z;
+                zapasMap[`${z.hrac2_id}_${z.hrac1_id}`] = z;
+            });
+
+            const header = `<tr>
+    <th class="rr-name">Hráč</th>
+    ${hraci.map((h,i) => `<th title="${h.jmeno} ${h.prijmeni}">${i+1}</th>`).join("")}
+    <th>Celkem</th>
+  </tr>`;
+
+  const rows = hraci.map((h, ri) => {
+    const cells = hraci.map((opp, ci) => {
+      if (h.id === opp.id) return `<td class="rr-self">—</td>`;
+      const z = zapasMap[`${h.id}_${opp.id}`];
+      if (!z) return `<td class="rr-empty" title="Nezehráno">·</td>`;
+
+      const jsemH1 = z.hrac1_id === h.id;
+      const moje = jsemH1 ? z.h1_sety_won : z.h2_sety_won;
+      const jejich = jsemH1 ? z.h2_sety_won : z.h1_sety_won;
+      // isDraw MUST be checked first — vitez_id null = draw (not a loss)
+      const isDraw = !z.vitez_id;
+      const vyhrál = !isDraw && z.vitez_id === h.id;
+
+      // Build score per set - filter 0:0 (unfilled sets)
+      const setScores = z.sety
+        .filter(s => s.h1 > 0 || s.h2 > 0)
+        .map(s => jsemH1 ? `${s.h1}:${s.h2}` : `${s.h2}:${s.h1}`).join(" ");
+      const rrClass = isDraw ? 'rr-draw' : vyhrál ? 'rr-won' : 'rr-lost';
+
+      return `<td class="rr-played ${rrClass}" title="${setScores}">
+        ${moje}:${jejich}<br>
+        <span class="rr-score-line">${setScores}</span>
+      </td>`;
+    }).join("");
+
+    const odehrano = hraci.filter(opp => opp.id !== h.id && zapasMap[`${h.id}_${opp.id}`]).length;
+    const zbyvajicich = hraci.length - 1 - odehrano;
+
+    return `<tr>
+      <td class="rr-name"><strong>${ri+1}.</strong> ${h.jmeno} ${h.prijmeni}</td>
+      ${cells}
+      <td style="font-size:12px;color:var(--muted)">${odehrano}/${hraci.length-1}</td>
+    </tr>`;
+  }).join("");
+
+  cont.innerHTML = `<table class="rr-table"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+}
+
+// ---- Matches ----
+function renderMatches() {
+  const data = currentFilter === "vse" ? allZapasy : allZapasy.filter(z => z.skupina === currentFilter);
+  const grid = document.getElementById("match-grid");
+
+  if (!data.length) {
+    grid.innerHTML = `<div class="empty-matches"><div class="icon">🏓</div><p>Zatím žádné zápasy</p></div>`;
+    return;
+  }
+
+  const sorted = [...data].sort((a,b) => new Date(b.datum) - new Date(a.datum));
+  grid.innerHTML = sorted.map(z => {
+    const isDraw = !z.vitez_id;
+    const h1won = !isDraw && z.vitez_id === z.hrac1_id;
+    const sets = z.sety
+      .filter(s => s.h1 > 0 || s.h2 > 0)
+      .map((s, i) => {
+        const h1wins = s.h1 > s.h2;
+        return `<span class="set-pill ${h1wins ? 'won' : ''}">${s.h1}:${s.h2}</span>`;
+      }).join(" ");
+    const badge = z.skupina === "dospeli"
+      ? '<span class="badge badge-accent">Dospělí</span>'
+      : '<span class="badge badge-blue">Dorost</span>';
+
+    return `<div class="match-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        ${badge}
+        <span style="font-size:11px;color:var(--muted)">${formatDate(z.datum)}</span>
+      </div>
+      <div class="match-players">
+        <div class="match-player ${isDraw ? '' : h1won ? 'winner' : 'loser'}">${h1won ? '🏆 ' : isDraw ? '🤝 ' : ''}${z.hrac1_jmeno}</div>
+        <div class="match-vs">${z.h1_sety_won}:${z.h2_sety_won}</div>
+        <div class="match-player ${isDraw ? '' : !h1won ? 'winner' : 'loser'}" style="text-align:right">${!h1won && !isDraw ? '🏆 ' : isDraw ? '🤝 ' : ''}${z.hrac2_jmeno}</div>
+      </div>
+      <div class="match-score">${sets}</div>
+    </div>`;
+  }).join("");
+}
+
+// ---- Modal: load players ----
+async function nacistHraceModal() {
+  const skupina = document.querySelector('input[name="z-skupina"]:checked').value;
+  const hraci   = allHraci[skupina] || [];
+  const sel1    = document.getElementById("z-hrac1");
+  const sel2    = document.getElementById("z-hrac2");
+  const opts    = `<option value="">— vyber hráče —</option>` + hraci.map(h => `<option value="${h.id}">${h.jmeno} ${h.prijmeni}</option>`).join("");
+  sel1.innerHTML = opts;
+  sel2.innerHTML = opts;
+  renderSetRows();
+  updatePlayerLabels();
+}
+
+function updatePlayerLabels() {
+  const s1 = document.getElementById("z-hrac1");
+  const s2 = document.getElementById("z-hrac2");
+  document.getElementById("plabel1").textContent = s1.options[s1.selectedIndex]?.text || "Hráč 1";
+  document.getElementById("plabel2").textContent = s2.options[s2.selectedIndex]?.text || "Hráč 2";
+}
+
+function renderSetRows() {
+  const pocet = config.pocet_setu || 3;
+  document.getElementById("set-rows").innerHTML = Array.from({length: pocet}, (_, i) => `
+    <div class="set-row">
+      <div class="set-row-label">Set ${i+1}</div>
+      <input type="number" class="score-input" id="s${i}h1" min="0" max="99" placeholder="0">
+      <div class="score-sep">:</div>
+      <input type="number" class="score-input" id="s${i}h2" min="0" max="99" placeholder="0">
+    </div>
+  `).join("");
+}
+
+async function ulozitZapas() {
+  const skupina  = document.querySelector('input[name="z-skupina"]:checked').value;
+  const hrac1_id = document.getElementById("z-hrac1").value;
+  const hrac2_id = document.getElementById("z-hrac2").value;
+
+  if (!hrac1_id || !hrac2_id) return showToast("Vyber oba hráče!", "error");
+  if (hrac1_id === hrac2_id)  return showToast("Hráči musí být různí!", "error");
+
+  const pocet = config.pocet_setu || 3;
+  const sety = [];
+  for (let i = 0; i < pocet; i++) {
+    const h1v = parseInt(document.getElementById(`s${i}h1`).value) || 0;
+    const h2v = parseInt(document.getElementById(`s${i}h2`).value) || 0;
+    sety.push({ h1: h1v, h2: h2v });
+  }
+
+  const hrac1name = document.getElementById("z-hrac1").options[document.getElementById("z-hrac1").selectedIndex].text;
+  const hrac2name = document.getElementById("z-hrac2").options[document.getElementById("z-hrac2").selectedIndex].text;
+
+  const res = await API.post("/zapasy", { skupina, hrac1_id, hrac2_id, sety });
+  if (res.ok) {
+    const h1s = res.zapas.h1_sety_won;
+    const h2s = res.zapas.h2_sety_won;
+    const vitezMsg = h1s === h2s
+      ? `Remíza ${h1s}:${h2s} na sety`
+      : `Výherce: ${h1s > h2s ? hrac1name : hrac2name} (${h1s}:${h2s} na sety)`;
+    showToast(`✅ Zápas uložen! ${vitezMsg}`, "success", 5000);
+    closeModal("modalZapas");
+    await loadAll();
+  } else {
+    showToast("Chyba: " + (res.error || "Neznámá chyba"), "error");
+  }
+}
+
+// ---- Init & auto-refresh ----
+async function init() {
+  await loadAll();
+  await nacistHraceModal();
+  renderSetRows();
+}
+
+init();
+setInterval(async () => {
+  await loadAll();
+  nacistHraceModal(); // refresh player selects too
+}, 30000);
+    </script>
+</body>
+
+</html>

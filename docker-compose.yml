@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  pingpong-api:
+    build: .
+    container_name: pingpong-api
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./public:/app/public
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - caddy_net
+
+networks:
+  caddy_net:
+    external: true

@@ -1,0 +1,23 @@
+{
+  "dospeli": [
+    {
+      "id": "1776670221889",
+      "jmeno": "Petr",
+      "prijmeni": "Mrňa",
+      "skupina": "dospeli"
+    },
+    {
+      "id": "1776670254619",
+      "jmeno": "Petr",
+      "prijmeni": "Syrový",
+      "skupina": "dospeli"
+    },
+    {
+      "id": "1776670261227",
+      "jmeno": "David",
+      "prijmeni": "Mrňa",
+      "skupina": "dospeli"
+    }
+  ],
+  "dorost": []
+}
