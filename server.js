@@ -264,14 +264,9 @@ app.get("/api/stats", (req, res) => {
   });
 });
 
-// ---- Root redirect ----
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "router.html"));
-});
-
 // ---- 404 fallback ----
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, "public", "router.html"));
+  res.status(404).sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.listen(PORT, () => console.log(`PingPong server running on port ${PORT}`));
