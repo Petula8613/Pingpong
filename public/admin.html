@@ -142,33 +142,32 @@
   let zapasyData = [];
   let currentTab = "dospeli";
 
-  function escQ(s) { return String(s).replace(/"/g, "&quot;"); }
+  function escQ(s) { return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
 
-  const AApi = {
-    async get(path) {
-      return (await fetch("/api" + path)).json();
-    },
-    async put(path, data) {
-      const r = await fetch("/api" + path, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Admin-Password": adminPwd },
-        body: JSON.stringify(data)
-      });
-      return r.json();
-    },
-    async del(path) {
-      const r = await fetch("/api" + path, {
-        method: "DELETE",
-        headers: { "X-Admin-Password": adminPwd }
-      });
-      return r.json();
-    }
-  };
+  async function apiGet(path) {
+    const r = await fetch("/api" + path);
+    return r.json();
+  }
+  async function apiPut(path, data) {
+    const r = await fetch("/api" + path, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "X-Admin-Password": adminPwd },
+      body: JSON.stringify(data)
+    });
+    return r.json();
+  }
+  async function apiDel(path) {
+    const r = await fetch("/api" + path, {
+      method: "DELETE",
+      headers: { "X-Admin-Password": adminPwd }
+    });
+    return r.json();
+  }
 
   async function prihlasit() {
     const pwd = document.getElementById("login-pwd").value;
-    const r = await fetch("/api/admin/verify", { headers: { "X-Admin-Password": pwd } });
-    const res = await r.json();
+    const resp = await fetch("/api/admin/verify", { headers: { "X-Admin-Password": pwd } });
+    const res = await resp.json();
     if (res.ok) {
       adminPwd = pwd;
       sessionStorage.setItem("adminPwd", pwd);
@@ -187,7 +186,7 @@
   }
 
   async function zobrazit() {
-    [hraciData, zapasyData] = await Promise.all([AApi.get("/hraci"), AApi.get("/zapasy")]);
+    [hraciData, zapasyData] = await Promise.all([apiGet("/hraci"), apiGet("/zapasy")]);
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("admin-content").style.display = "";
     renderHraci();
@@ -264,7 +263,7 @@
     const jmeno = document.getElementById("eh-jmeno").value.trim();
     const prijmeni = document.getElementById("eh-prijmeni").value.trim();
     if (!jmeno || !prijmeni) return showToast("Vyplň jméno i příjmení", "error");
-    const res = await AApi.put(`/hraci/${id}`, { jmeno, prijmeni });
+    const res = await apiPut("/hraci/" + id, { jmeno, prijmeni });
     if (res.ok) {
       showToast("✅ Hráč upraven", "success");
       closeModal("modalHrac");
@@ -276,7 +275,7 @@
 
   async function smazatHrace(btn) {
     if (!confirm(`Smazat hráče "${btn.dataset.label}"?\nBudou smazány i všechny jeho zápasy.`)) return;
-    const res = await AApi.del(`/hraci/${btn.dataset.id}`);
+    const res = await apiDel("/hraci/" + btn.dataset.id);
     if (res.ok) { showToast("🗑️ Hráč smazán", "success"); await nacist(); }
     else showToast(res.error || "Chyba", "error");
   }
@@ -318,7 +317,7 @@
       h1: parseInt(row.querySelector(".ez-h1").value) || 0,
       h2: parseInt(row.querySelector(".ez-h2").value) || 0
     }));
-    const res = await AApi.put(`/zapasy/${id}`, { sety });
+    const res = await apiPut("/zapasy/" + id, { sety });
     if (res.ok) {
       showToast("✅ Zápas upraven", "success");
       closeModal("modalZapas");
@@ -330,13 +329,13 @@
 
   async function smazatZapas(btn) {
     if (!confirm(`Smazat zápas "${btn.dataset.label}"?`)) return;
-    const res = await AApi.del(`/zapasy/${btn.dataset.id}`);
+    const res = await apiDel("/zapasy/" + btn.dataset.id);
     if (res.ok) { showToast("🗑️ Zápas smazán", "success"); await nacist(); }
     else showToast(res.error || "Chyba", "error");
   }
 
   async function nacist() {
-    [hraciData, zapasyData] = await Promise.all([AApi.get("/hraci"), AApi.get("/zapasy")]);
+    [hraciData, zapasyData] = await Promise.all([apiGet("/hraci"), apiGet("/zapasy")]);
     renderHraci();
     renderZapasy();
   }
