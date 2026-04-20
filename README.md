@@ -46,7 +46,7 @@ pingpong.petula.fun {
 }
 ```
 
-Ujisti se, že container `pingpong-api` je na stejné Docker síti jako Caddy (`caddy_net`).
+Ujisti se, že container `pingpong-api` je na stejné Docker síti jako Caddy (`docker_webnet`).
 
 ## 3. Nastavení data turnaje
 
